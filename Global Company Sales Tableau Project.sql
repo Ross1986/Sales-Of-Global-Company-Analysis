@@ -1,4 +1,4 @@
----Sales Of Globle Company: Tableau Prodject--- 
+---Sales Of Global Company: Tableau Prodject--- 
 
 ----INSPECTING THE DATA----
 

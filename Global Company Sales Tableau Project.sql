@@ -1,4 +1,4 @@
----Sales Of Global Company: Tableau Prodject--- 
+---Sales Of Global Company: Tableau Project--- 
 
 ----INSPECTING THE DATA----
 

@@ -1,27 +1,27 @@
----Sales Of Global Company: Tableau Project--- 
+---Sales Of Global Company dataset exploration and RFM Analysts
 
 ----INSPECTING THE DATA----
 
 SELECT *
-FROM sales_data_sample
+FROM sales_data_sample;
 
 ----INSPECTING DISTINCT VALUES---
 
 SELECT DISTINCT COUNTRY FROM sales_data_sample
 SELECT DISTINCT CITY FROM sales_data_sample
-SELECT DISTINCT TERRITORY FROM sales_data_sample
+SELECT DISTINCT TERRITORY FROM sales_data_sample;
 
 SELECT DISTINCT YEAR_ID FROM sales_data_sample
 SELECT DISTINCT MONTH_ID FROM sales_data_sample
-SELECT DISTINCT QTR_ID FROM sales_data_sample
+SELECT DISTINCT QTR_ID FROM sales_data_sample;
 
 SELECT DISTINCT PRODUCTLINE
-FROM sales_data_sample
+FROM sales_data_sample;
 
 SELECT DISTINCT PRODUCTCODE, PRODUCTLINE
-FROM sales_data_sample
+FROM sales_data_sample;
 
-SELECT DISTINCT DEALSIZE FROM sales_data_sample
+SELECT DISTINCT DEALSIZE FROM sales_data_sample;
 
 
 SELECT DISTINCT PRICEPERUNIT, PRODUCTLINE
@@ -69,15 +69,15 @@ FROM sales_data_sample
 WHERE YEAR_ID like '%2005%'
 ORDER by 1 desc;
 
-/* Only have sales data for the first 5 months
-of sales in 2005 */
-
 SELECT MAX(ORDERDATE)
 FROM sales_data_sample
-where YEAR_ID = 2005
+where YEAR_ID = 2005;
 
-----Data only collected untill 5/31/2005---
-
+/*
+We only have sales data for the first 5 months
+of sales in 2005.
+Data only collected untill 5/31/2005 
+*/
 
 ----Revenue from each deal size---
 
@@ -98,9 +98,10 @@ GROUP BY DEALSIZE
 order by 2 desc;
 
 /* Considering the status of the order, the revenues above maybe
-incorrect. */
+incorrect */
 
 ----sales with Cancelled status---
+
 SELECT *
 FROM sales_data_sample
 where status = 'Cancelled'
@@ -122,7 +123,7 @@ SELECT *
 FROM sales_data_sample
 WHERE ORDERNUMBER = '10327'
 
-/* Sales with Resolved status do not show as shipped or cancelled*/
+/* Sales with resolved status do not show as shipped or cancelled*/
 
 SELECT *
 FROM sales_data_sample
@@ -133,10 +134,10 @@ FROM sales_data_sample
 WHERE ORDERNUMBER = '10424'
 
 /* all the oreders with the "in process" status are in the last 3 days of may 2005
-and may 2005 is where are data stops, therefor I will asume-=-=-=-= the order was shipped*/
+and may 2005 is where are data stops, therefor I will assume the order was shipped*/
 
 /*Going forward I will only consider orders which do not have the status cancelled, 
-below is an example using revenue per year */
+below is an example using total revenue per year */
 
 SELECT YEAR_ID, SUM(cast(sales as decimal)) TotalRevenue
 FROM sales_data_sample
@@ -171,32 +172,9 @@ order by 3 desc;
 
 ---Classic cars were the best selling product in november---
 
-----Creating veiws to create Tableau dashboard---
-
-/*First creating temp table to take away any 'cancelled' order status and
-fix issues with orderdate format
-*/
-
-DROP TABLE IF exists #Sales_data_without_cancelled_orders
-Create Table #Sales_data_without_cancelled_orders
-(
-COUNTRY nvarchar(255),
-CITY nvarchar(255),
-ORDERDATE datetime,
-SALES numeric,
-STATUS nvarchar(255)
-)
-Insert into #Sales_data_without_cancelled_orders
-SELECT COUNTRY, CITY, ORDERDATE, SALES, STATUS
-FROM sales_data_sample
-WHERE STATUS != 'cancelled'
-
-SELECT *
-FROM #Sales_data_without_cancelled_orders
 
 ----Revanue for each ProductLine---
 
-CREATE VIEW RevanuePerProductLine AS
 SELECT PRODUCTLINE, SUM(cast(sales as decimal)) Revenue
 FROM sales_data_sample
 WHERE STATUS != 'cancelled'
@@ -204,23 +182,22 @@ GROUP BY PRODUCTLINE;
 
 ----Running total of sales per country---
 
-CREATE VIEW RollingSalesPerCountry AS
 SELECT COUNTRY, ORDERDATE, SALES,   
 SUM(CONVERT(INT,SALES)) OVER (PARTITION BY COUNTRY ORDER BY ORDERDATE 
 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rolling_revenue
-FROM #Sales_data_without_cancelled_orders
+FROM sales_data_sample
+WHERE STATUS != 'cancelled'
 
 ----Running total of sales per city---
 
-CREATE VIEW RollingSalesPerCity AS
 SELECT CITY, ORDERDATE, SALES,   
 SUM(CONVERT(INT,SALES)) OVER (PARTITION BY CITY ORDER BY ORDERDATE 
 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rolling_revenue
-FROM #Sales_data_without_cancelled_orders
+FROM sales_data_sample
+WHERE STATUS != 'cancelled'
 
 ----Sales of product line per year---
 
-CREATE VIEW ProductlineSalesPerYear AS
 SELECT YEAR_ID, PRODUCTLINE, SUM(cast(sales as decimal)) Revenue
 FROM sales_data_sample
 WHERE STATUS != 'cancelled'
@@ -229,10 +206,53 @@ ORDER BY YEAR_ID;
 
 -----Deal size distribution---
 
-CREATE VEIW DealSizeDistribution AS
 SELECT DEALSIZE, YEAR_ID, SUM(cast(sales as decimal)) Revenue
 FROM sales_data_sample
 WHERE STATUS != 'cancelled'
 GROUP BY DEALSIZE, YEAR_ID
 ORDER BY YEAR_ID;
 
+---RFM analysts (Recency,Frequency,Monetary)---
+
+DROP TABLE IF EXISTS #rfm
+;with rfm as
+(
+Select 
+	CUSTOMERNAME, 
+	SUM(sales) MonetaryValue, 
+	AVG(sales) AvgMonetaryValue, 
+	COUNT(ORDERNUMBER) Frequency,
+	MAX(ORDERDATE) LastOrderDate, 
+	DATEDIFF(DD, MAX(ORDERDATE), '2005/5/31') Recency
+FROM sales_data_sample
+WHERE STATUS != 'cancelled'
+GROUP BY CUSTOMERNAME
+),
+-- Define another CTE named rfm_calc and Divide customers into 4 groups based on recency, frequency and monetary value
+rfm_calc as
+(
+SELECT R.*,
+	NTILE(4) OVER (order by Recency desc) rfm_recency,
+	NTILE(4) OVER (order by Frequency) rfm_Frequency,
+	NTILE(4) OVER (order by MonetaryValue) rfm_monetary
+FROM rfm R
+)
+-- Calculate the RFM cell for each customer and Storing results in #rfm table
+select 
+	c.*, rfm_recency+ rfm_frequency+ rfm_monetary as rfm_cell,
+	cast(rfm_recency as varchar) + cast(rfm_frequency as varchar) + cast(rfm_monetary  as varchar)rfm_cell_string
+into #rfm
+from rfm_calc c
+
+-- Assign a segment name to each RFM cell, to easily identify customer type
+select CUSTOMERNAME , rfm_recency, rfm_frequency, rfm_monetary,
+	case 
+		when rfm_cell_string in (111, 112 , 121, 122, 123, 132, 211, 212, 114, 141) then 'lost_customer'  --Customers who are not returning customers
+		when rfm_cell_string in (133, 134, 143, 244, 334, 343, 344, 144) then 'Big spenders, with no recent activity' --big spenders who haven’t purchased lately
+		when rfm_cell_string in (311, 411, 331) then 'new customers'
+		when rfm_cell_string in (222, 223, 233, 322) then 'Infrequent'
+		when rfm_cell_string in (323, 333,321, 422, 332, 432) then 'Frequent'
+		when rfm_cell_string in (433, 434, 443, 444) then 'Frequent big spenders'
+	end rfm_segment
+
+from #rfm

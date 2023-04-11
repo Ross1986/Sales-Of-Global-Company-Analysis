@@ -247,12 +247,13 @@ from rfm_calc c
 -- Assign a segment name to each RFM cell, to easily identify customer type
 select CUSTOMERNAME , rfm_recency, rfm_frequency, rfm_monetary,
 	case 
-		when rfm_cell_string in (111, 112 , 121, 122, 123, 132, 211, 212, 114, 141) then 'lost_customer'  --Customers who are not returning customers
-		when rfm_cell_string in (133, 134, 143, 244, 334, 343, 344, 144) then 'Big spenders, with no recent activity' --big spenders who haven’t purchased lately
+		when rfm_cell_string in (111, 112 , 121, 122, 123, 132, 211, 212, 114, 141) then 'lost customer'
+		
 		when rfm_cell_string in (311, 411, 331) then 'new customers'
-		when rfm_cell_string in (222, 223, 233, 322) then 'Infrequent'
-		when rfm_cell_string in (323, 333,321, 422, 332, 432) then 'Frequent'
-		when rfm_cell_string in (433, 434, 443, 444) then 'Frequent big spenders'
+		when rfm_cell_string in (222, 223, 233, 322) then 'infrequent customers'
+		when rfm_cell_string in (323, 333,321, 422, 332, 432) then 'frequent customers'
+		when rfm_cell_string in (433, 434, 443, 444) then 'frequent big spenders'
+		when rfm_cell_string in (133, 134, 143, 244, 334, 343, 344, 144) then 'big spenders with no recent activity'
 	end rfm_segment
 
 from #rfm

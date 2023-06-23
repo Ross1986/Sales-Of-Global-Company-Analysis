@@ -24,13 +24,6 @@ This SQL code is designed to explore and analyze a sales dataset, providing insi
 - [Deal Size Distribution](#deal-size-distribution)
 - [RFM Analysts](#rfm-analysts)
 
-## Inspecting the Data
-
-The code begins with inspecting the data by selecting all columns from the "sales_data_sample" table.
-
-## Inspecting Distinct Values
-
-The code examines distinct values for various columns such as "COUNTRY," "CITY," "TERRITORY," "YEAR_ID," "MONTH_ID," "QTR_ID," "PRODUCTLINE," "PRODUCTCODE," "DEALSIZE," and "PRICEPERUNIT."
 
 ## Analysis
 
@@ -90,7 +83,7 @@ The code calculates the running total of sales for each city.
 
 ## Sales of Product Line per Year
 
-The code analyzes the sales of each product line in different years.
+The code analyses the sales of each product line in different years.
 
 ## Deal Size Distribution
 
@@ -98,8 +91,8 @@ The code examines the distribution of sales based on deal size.
 
 ## RFM Analysts
 
-The code performs RFM (Recency, Frequency, Monetary) analysis to categorize customers into segments based on their buying behavior.
+The code performs RFM (Recency, Frequency, Monetary) analysis to categorise customers into segments based on their buying behaviour.
 
 ---
 
-This SQL code provides a comprehensive analysis of the sales dataset, exploring various dimensions of the data and providing valuable insights into revenue, customer behavior, and other key metrics. Feel free to modify and adapt the code as per your specific requirements.
+This SQL code comprehensively analyses the sales dataset, exploring various dimensions of the data and providing valuable insights into revenue, customer behaviour, and other key metrics. Please feel free to modify and adapt the code according to your specific requirements.
